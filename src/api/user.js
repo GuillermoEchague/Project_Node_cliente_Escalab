@@ -13,8 +13,8 @@ export function signUpApi(data){
     return fetch(url,params)
         .then(Response =>{
             return Response.json();
-        }).then(Result => {
-            if(Result.user){
+        }).then(result => {
+            if(result.user){
                 return {
                     status: true,
                     message: "Usuario Creado exitosamente"
