@@ -3,9 +3,12 @@ import {   Switch, List, Avatar, Button, Icon, Modal as ModalAntd, notification 
 import NoAvatar from "../../../../assets/img/png/no-avatar.png";
 import Modal from "../../../Modal";
 import EditUserForm from "../EditUserForm";
-import { getAvatarApi } from "../../../../api/user";
+import { getAvatarApi, activateUserApi, deleteUserApi } from "../../../../api/user";
+import {getAccessTokenApi} from "../../../../api/auth";
 
 import "./ListUsers.scss";
+
+const {confirm} = ModalAntd;
 
 export default function ListUsers(props) {
     const { usersActive, usersInactive, setReloadUsers } = props;
@@ -31,7 +34,7 @@ export default function ListUsers(props) {
                                     setModalTitle={setModalTitle}
                                     setModalContent={setModalContent}
                                     setReloadUsers={setReloadUsers}
-                                    />  ):(<UsersInactive usersInactive={usersInactive}/>)}
+                                    />  ):(<UsersInactive usersInactive={usersInactive} setReloadUsers = {setReloadUsers}/>)}
 
             <Modal
                 title={modalTitle}
@@ -70,20 +73,18 @@ function UsersActive(props) {
          );
       };
 
-
-
     return (
         <List 
         className="users-active"
         itemLayout="horizontal"
         dataSource={usersActive}
-        renderItem={user => <UserActive user={user} editUser={editUser} />}
+        renderItem={user => <UserActive user={user} editUser={editUser} setReloadUsers = {setReloadUsers} />}
         />
     );
 }
 
 function UserActive(props) {
-    const {user, editUser} = props;
+    const {user, editUser, setReloadUsers} = props;
     const [avatar, setAvatar] = useState(null);
 
     useEffect(() => {
@@ -95,7 +96,46 @@ function UserActive(props) {
           setAvatar(null);
         }
       }, [user]);
+
+      const desactivateUser = () => {
+          const accessToken = getAccessTokenApi();
+          activateUserApi(accessToken, user._id, false)
+          .then(response => {
+              notification["success"]({
+                    message: response
+              });
+              setReloadUsers(true);
+          }).catch(err => {
+              notification["error"]({
+                  message: err
+              })
+          })
+      };
     
+      const showDeleteConfirm = () => {
+          const accessToken = getAccessTokenApi();
+          confirm({
+              title: "Eliminando usuario",
+              content: `¿Estas seguro que quieres eliminar a ${user.email} ?`,
+              okText: "Eliminar",
+              okType: "danger",
+              cancelText: "Cancelar",
+              onOk(){
+                  deleteUserApi(accessToken, user._id)
+                  .then(response => {
+                      notification["success"]({
+                          message: response
+                      });
+                      setReloadUsers(true);
+                  })
+                  .catch(err =>{
+                    notification["error"]({
+                        message: err
+                    })
+                  })
+              }
+          }) 
+      }
 
         return(
             <List.Item
@@ -108,13 +148,13 @@ function UserActive(props) {
                 </Button>,
                 <Button 
                 type="danger"
-                onClick={()=> console.log("Desactivar usuario")}
+                onClick={desactivateUser}
             >
                 <Icon type="stop" />
             </Button>,
             <Button 
             type="danger"
-            onClick={()=> console.log("Eliminar usuario")}
+            onClick={showDeleteConfirm}
         >
             <Icon type="delete" />
         </Button>,
@@ -135,19 +175,19 @@ function UserActive(props) {
 };
 
 function UsersInactive(props) {
-    const {usersInactive} = props;
+    const {usersInactive, setReloadUsers} = props;
     return (
         <List 
         className="users-active"
         itemLayout="horizontal"
         dataSource={usersInactive}
-        renderItem={user => <UserInactive user={user} />}
+        renderItem={user => <UserInactive user={user} setReloadUsers = {setReloadUsers} />}
         />
     );
 }
 
 function UserInactive(props) {
-    const{user} = props;
+    const{user, setReloadUsers} = props;
     const [avatar, setAvatar] = useState(null);
 
     useEffect(() => {
@@ -159,7 +199,47 @@ function UserInactive(props) {
           setAvatar(null);
         }
       }, [user]);
+
+      const activateUser = () => {
+        const accessToken = getAccessTokenApi();
+        activateUserApi(accessToken, user._id, true)
+        .then(response => {
+            notification["success"]({
+                  message: response
+            });
+            setReloadUsers(true);
+        }).catch(err => {
+            notification["error"]({
+                message: err
+            })
+        })
+    };
     
+
+    const showDeleteConfirm = () => {
+        const accessToken = getAccessTokenApi();
+        confirm({
+            title: "Eliminando usuario",
+            content: `¿Estas seguro que quieres eliminar a ${user.email} ?`,
+            okText: "Eliminar",
+            okType: "danger",
+            cancelText: "Cancelar",
+            onOk(){
+                deleteUserApi(accessToken, user._id)
+                .then(response => {
+                    notification["success"]({
+                        message: response
+                    });
+                    setReloadUsers(true);
+                })
+                .catch(err =>{
+                  notification["error"]({
+                      message: err
+                  })
+                })
+            }
+        }) 
+    }
 
       return(
 
@@ -167,14 +247,14 @@ function UserInactive(props) {
         actions={[
             <Button 
                 type="primary"
-                onClick={()=> console.log("Activar usuario")}
+                onClick={activateUser}
             >
                 <Icon type="check" />
             </Button>,
             
         <Button 
         type="danger"
-        onClick={()=> console.log("Eliminar usuario")}
+        onClick={showDeleteConfirm}
     >
         <Icon type="delete" />
     </Button>,

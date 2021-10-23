@@ -81,11 +81,11 @@ export default function RegisterForm() {
                 const result = await signUpApi(inputs);
 
                 if(!result.ok) {
-                    notification["error"]({
+                    notification["success"]({
                         message:result.message
                     });
                 } else {
-                    notification["success"]({
+                    notification["error"]({
                         message:result.message
                     });
                     resetForm();
