@@ -119,11 +119,12 @@ export function uploadAvatarApi(token, avatar, userId) {
       Authorization:token
     }
   }
-  return fetch(url, params).then(response => {
+return fetch(url, params)
+  .then(response => {
     return response.json()
   }).then(result => {
     return result;
-  }). catch(err => {
+  }).catch(err => {
     return err.message;
   });
 }

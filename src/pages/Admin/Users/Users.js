@@ -9,7 +9,7 @@ export default function Users() {
   
   const [usersActive, setUsersActive] = useState([]);
   const [usersInactive, setUsersInactive] = useState([]);
-  // const [reloadUsers, setReloadUsers] = useState(false);
+  const [reloadUsers, setReloadUsers] = useState(false);
   const token = getAccessTokenApi();
 
   useEffect(() => {
@@ -19,14 +19,15 @@ export default function Users() {
     getUsersActiveApi(token, false).then(response => {
       setUsersInactive(response.users);
     });
-    // setReloadUsers(false);
-  }, [token]);
+     setReloadUsers(false);
+  }, [token, reloadUsers]);
 
   return (
     <div className="users">
       <ListUsers 
       usersActive={usersActive}
       usersInactive={usersInactive}
+      setReloadUsers = {setReloadUsers}
       />
     </div>
   );

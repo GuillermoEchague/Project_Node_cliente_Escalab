@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {Avatar, Form, Input, Select, Icon, Button, Row, Col} from "antd";
+import {Avatar, Form, Input, Select, Icon, Button, Row, Col, notification} from "antd";
 import { useDropzone } from "react-dropzone";
-import NoAvatar from "../../../../assets/img/png/no-avatar.png"
+import NoAvatar from "../../../../assets/img/png/no-avatar.png";
+import { getAvatarApi, uploadAvatarApi, updateUserApi } from "../../../../api/user";
+import {getAccessTokenApi} from '../../../../api/auth';
 
 import "./EditUserForm.scss";
 export default function EditUserForm(props) {
-    const {user} = props;
+    const {user, setIsVisibleModal, setReloadUsers} = props;
     const [avatar, setAvatar] = useState(null);
     const [userData, setUserData] = useState({
         name: user.name,
@@ -16,14 +18,72 @@ export default function EditUserForm(props) {
     });
 
     useEffect(() => {
+        setUserData({});
+     }, [user]);
+
+    useEffect(() => {
+        if(user.avatar) {
+            getAvatarApi(user.avatar).then(response =>{
+                setAvatar(response);
+            })
+        } else{
+            setAvatar(null);
+        }
+     }, [user]);
+
+
+    useEffect(() => {
        if(avatar) {
-           setUserData({...userData, avatar})
+           setUserData({...userData, avatar: avatar.file})
        }
     }, [avatar]);
 
     const updateUser = e => {
         e.preventDefault();
-    }
+        const token = getAccessTokenApi();
+        let userUpdate = userData;
+
+        if(userUpdate.password || userUpdate.repeatPassword){
+            if(userUpdate.password !== userUpdate.repeatPassword) {
+                notification["error"]({
+                    message:"Las contraseñas tienen que ser iguales."
+                });
+                return;
+            } else {
+                delete userUpdate.repeatPassword;
+            }
+            
+        }
+
+        if(!userUpdate.name || userUpdate.lastname || !userUpdate.email){
+            notification["error"]({
+                message: "El nombre, apellidos y email son obligatorios."
+            })
+            return;
+        }
+
+        if(typeof userUpdate.avatar === "object" ){
+            uploadAvatarApi(token, userUpdate.avatar, user._id).then(response => {
+                userUpdate.avatar = response.avatarName;
+                updateUserApi(token, userUpdate, user._id).then(result =>{
+                    notification["success"]({
+                        message:result.message
+                    });
+                    setIsVisibleModal(false);
+                    setReloadUsers(true);
+                });
+            });
+        } else {
+            updateUserApi(token, userUpdate, user._id).then(result =>{
+                notification["success"]({
+                    message:result.message
+                });
+                setIsVisibleModal(false);
+                setReloadUsers(true);
+            });
+        }
+
+    };
 
     return (
         <div className="edit-user-form">
@@ -37,6 +97,19 @@ export default function EditUserForm(props) {
 
 function UploadAvatar(props) {
     const {avatar, setAvatar} = props;
+    const [avatarUrl, setAvatarUrl] = useState(null);
+    useEffect(() => {
+        if(avatar) {
+           if(avatar.preview){
+               setAvatarUrl(avatar.preview)
+           } else {
+               setAvatarUrl(avatar)
+           } 
+        } else{
+            setAvatarUrl(null)
+        }
+     }, [avatar]);
+
 
     const onDrop = useCallback(
             acceptedFiles => {
@@ -70,39 +143,42 @@ function EditForm(props) {
 
     return (
         <Form className="form-edit" onSubmit={updateUser}>
+             <Row gutter={24}>
+        <Col span={12}>
+          <Form.Item>
+            <Input
+              prefix={<Icon type="user" />}
+              placeholder="Nombre"
+              value={userData.name}
+              onChange={e => setUserData({ ...userData, name: e.target.value })}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item>
+            <Input
+              prefix={<Icon type="user" />}
+              placeholder="Apellidos"
+              value={userData.lastname}
+              onChange={e =>
+                setUserData({ ...userData, lastname: e.target.value })
+              }
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
             <Row gutter={24}>
                 <Col span={12}>
                     <Form.Item>
-                        <Input 
-                            prefix={<Icon type="user" />}
-                            placeholder="Nombre"
-                            defaultValue={userData.name}
-                            onChange={e => setUserData({...userData, name: e.target.value})}
-                        />
-                    </Form.Item>
-
-                     </Col>
-                <Col span={12}>
-                <Form.Item>
-                        <Input 
-                            prefix={<Icon type="user" />}
-                            placeholder="Apellidos"
-                            defaultValue={userData.lastname}
-                            onChange={e => setUserData({...userData, lastname: e.target.value})}
-                            />    
-                </Form.Item>
-                </Col>
-            </Row>
-
-            <Row gutter={24}>
-                <Col span={12}>
-                    <Form.Item>
-                        <Input 
-                            prefix={<Icon type="mail" />}
-                            placeholder="Correo electronico"
-                            defaultValue={userData.email}
-                            onChange={e => setUserData({...userData, email: e.target.value})}
-                            />         
+                    <Input
+                        prefix={<Icon type="mail" />}
+                        placeholder="Correo electronico"
+                        value={userData.email}
+                        onChange={e =>
+                setUserData({ ...userData, email: e.target.value })
+              }
+            />        
                     </Form.Item>
                 </Col>
 
@@ -111,7 +187,7 @@ function EditForm(props) {
                     <Select
                         placeholder="Selecciona un Rol"
                         onChange={e => setUserData({...userData, role: e})}
-                        defaultValue={userData.role}
+                        value={userData.role}
                     >
                         <Option value="admin">Administrador</Option>
                         <Option value="editor">Editor</Option>
