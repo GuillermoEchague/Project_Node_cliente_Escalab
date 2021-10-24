@@ -47,7 +47,7 @@ git merge <Nombre Rama> -m "Mensaje rama"
 ## Demostración del proyecto
 
 ### Home
-![](img/.png)
+![](img/0.png)
 
 ### Register
 ![](img/1.png)
