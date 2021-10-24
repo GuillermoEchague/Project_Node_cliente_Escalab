@@ -16,6 +16,9 @@ export default function SignIn() {
       return <Redirect to="/admin" />;
     }
     return (
+     
+      
+
       <Layout className="sign-in">
         <Content className="sign-in__content">
           <h1 className="sign-in__content-logo">
@@ -34,5 +37,6 @@ export default function SignIn() {
           </div>
         </Content>
       </Layout>
+     
     );
   }
